@@ -1,3 +1,3 @@
 # Using nim
 
-`nim c -r read_file.nim`
+`nim c -r syntax.nim`
