@@ -16,8 +16,8 @@ proc sol(data: seq[string]): (int, int) =
             row_input = boarding_pass[0..^4]
             col_input = boarding_pass[^3..^1]
         var 
-            rows = @[0, 127]
-            cols = @[0, 7]
+            rows = [0, 127]
+            cols = [0, 7]
         for partition in row_input:
             if partition == 'F':
                 rows[1] = rows[0]+int((rows[1]-rows[0]+1)/2)-1
@@ -42,7 +42,6 @@ proc sol(data: seq[string]): (int, int) =
             seat = id
             break
     return (max, seat)
-
 
 
 assert sol(test)[0] == 820
