@@ -48,12 +48,13 @@ proc sol2(instructions: seq[(string, int)]): int =
         let
             orig = instructions[index][0]
             replaced = (if orig == "jmp": "noop" elif orig == "noop": "jmp" else: orig)
-        modified_instructions[index] = (replaced, instructions[index][1])
-        let (acc, terminates) = sol1(modified_instructions)
-        if terminates:
-            return acc
-        else:
-            modified_instructions[index] = (orig, instructions[index][1])
+        if orig != "acc":
+            modified_instructions[index] = (replaced, instructions[index][1])
+            let (acc, terminates) = sol1(modified_instructions)
+            if terminates:
+                return acc
+            else:
+                modified_instructions[index] = (orig, instructions[index][1])
 
 
 assert sol1(parse(test))[0] == 5
