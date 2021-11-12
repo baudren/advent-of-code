@@ -88,4 +88,5 @@ proc sol2(data: string, moves: int): int =
 assert test.sol1(10) == "92658374"
 assert test.sol1(100) == "67384529"
 dump data.sol1(100)
+assert test.sol2(10_000_000) == 149245887792
 dump data.sol2(10_000_000)
