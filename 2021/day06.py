@@ -1,5 +1,3 @@
-import re
-
 def sol1(data, days):
     school = {}
     for fish in data:
