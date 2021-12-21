@@ -1,3 +1,5 @@
+from collections import Counter
+
 class Map:
 
     def __init__(self, scanners):
@@ -18,19 +20,78 @@ class Map:
                             d2 = s2.dists(k)
                             found = set([item for p, v in d1.items() if p in d2 for item in v])
                             other = set([item for p, v in d2.items() if p in d1 for item in v])
-                            f = [v for p,v in d1.items() if p in d2]
-                            o = [v for p,v in d2.items() if p in d1]
-                            print(len(f), len(o))
+                            
                             if len(other) >= 12 and s1.pos is not None:
                                 print(f"match with orientation {k}")
+                                if j == 4:
+                                    f =  [v for p, v in d1.items() if p in d2]
+                                    o = [v for p, v in d2.items() if p in d1]
+                                    print(Counter(elem[0] for elem in f))
+                                    print(Counter(elem[1] for elem in f))
+                                    print(Counter(elem[0] for elem in o))
+                                    print(Counter(elem[1] for elem in o))
+                                    print(s1.beacons[74])
+                                    print(s2.beacons[24])
+                                    #exit()
                                 s2.orientation = k
                                 # do the same as before but without the abs to determine which item matched exactly
                                 rd2 = s2.rdists(k)
                                 first_tuple, ids = [(p,v) for p, v in rd2.items() if p in d1][0]
+                                #items = [(p,v) for p, v in rd2.items() if p in d1]
+                                #for first_tuple, ids in items:
                                 s11 = s1.beacons[d1[first_tuple][0]]
                                 s12 = s1.beacons[d1[first_tuple][1]]
                                 s21 = s2.get_beacon(ids[0], 0)
                                 s22 = s2.get_beacon(ids[1], 0)
+                                if j == 4:
+                                    print(len(found))
+                                    print(len(other))
+                                    xs,ys,zs = [],[],[]
+                                    xord = sorted(list(s1.beacons[i] for i in found), key=lambda beacon:beacon.x)
+                                    yord = sorted(list(s1.beacons[i] for i in found), key=lambda beacon:beacon.y)
+                                    zord = sorted(list(s1.beacons[i] for i in found), key=lambda beacon:beacon.z)
+                                    for i, item in enumerate(xord):
+                                        #if i < len(found)-1:
+                                            xs.append(xord[i].x-xord[0].x)
+                                    for i, item in enumerate(yord):
+                                        if i < len(found)-1:
+                                            ys.append(yord[i].y-yord[0].y)
+                                    for i, item in enumerate(zord):
+                                        if i < len(found)-1:
+                                            zs.append(zord[i].z-zord[0].z)
+
+                                    xs2,ys2,zs2 = [],[],[]
+                                    xord2 = sorted(list(s2.beacons[i] for i in other), key=lambda beacon:beacon.x)
+                                    yord2 = sorted(list(s2.beacons[i] for i in other), key=lambda beacon:beacon.y)
+                                    zord2 = sorted(list(s2.beacons[i] for i in other), key=lambda beacon:beacon.z)
+                                    for i, item in enumerate(xord2):
+                                        if i < len(other)-1:
+                                            xs2.append(xord2[i].x-xord2[0].x)
+                                    for i, item in enumerate(yord2):
+                                        if i < len(other)-1:
+                                            ys2.append(yord2[i].y-yord2[0].y)
+                                    for i, item in enumerate(zord2):
+                                        #if i < len(other)-1:
+                                            zs2.append(zord2[i].z-zord2[0].z)
+                                    print(xs)
+                                    print(xs2)
+                                    print(ys)
+                                    print(ys2)
+                                    print(zs)
+                                    print(zs2)
+                                    print("relative 0")
+                                    for item in found:
+                                        print(s1.beacons[item])
+                                    print("relative 4")
+                                    for item in other:
+                                        print(s2.beacons[item])
+                                    print()
+                                    print(first_tuple)
+                                    print(s11)
+                                    print(s12)
+                                    print(s2.get_beacon(ids[0], 0))
+                                    print(s2.get_beacon(ids[1], 0))
+                                    
                                 #print(f"s11 {s11}, s12 {s12}")
                                 #print(f"s21 {s21}, s22 {s22}")
                                 for rot in range(8):
@@ -43,13 +104,18 @@ class Map:
                                             s2.rot = rot
                                             add = s12-s22
                                             s2.set_pos((add[0]+s1.pos[0],add[1]+s1.pos[1],add[2]+s1.pos[2]))
+                                            s1.beacons.extend(s2.beacons)
+                                            s1.beacons = list(set(s1.beacons))
+                                            s2.beacons = []
+                                            break
+
                                             #raise ValueError
             except ValueError:
                 pass
             for i, s in self.scanners.items():
                 print(i, s)
                 print(s.pos)
-            exit()
+            #exit()
             if all([s.pos is not None for s in self.scanners.values()]):
                 break
     
@@ -232,5 +298,5 @@ if __name__ == "__main__":
 
     assert sol1(parse(test)) == 79
     print(sol1(parse(data)))
-    assert sol2(*parse(test)) == 1924
+    #assert sol2(*parse(test)) == 1924
     print(sol2(*parse(data)))
