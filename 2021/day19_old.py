@@ -8,119 +8,43 @@ class Map:
     
     def remove_duplicates(self):
         while True:
-            try:
-                for i, s1 in self.scanners.items():
-                    for j in range(i+1, len(self.scanners)):
-                        print(f"scanners {i}, {j}")
-                        s2 = self.scanners[j]
-                        if s2.pos is not None:
+            for i, s1 in self.scanners.items():
+                for j, s2 in self.scanners.items():
+                    if i == j: continue
+                    if s2.pos is not None: continue
+                    if s1.pos is None: continue
+                    print(f"scanners {i}, {j}")
+                    d1 = s1.adists(0)
+                    for k in range(6):
+                        d2 = s2.adists(k)
+                        found = set([item for p, v in d1.items() if p in d2 for item in v])
+                        other = set([item for p, v in d2.items() if p in d1 for item in v])
+                        #print(k, len(other))
+                        if len(other) >= 12:
+                            print("Found axes!")
+                            print(k)
+                            s2.set_orientation(k)
+                            for r1 in range(4):
+                                for r2 in range(4):
+                                    d1 = s1.rdists(r1)
+                                    d2 = s2.rdists(r2)
+                                    found = set([item for p, v in d1.items() if p in d2 for item in v])
+                                    other = set([item for p, v in d2.items() if p in d1 for item in v])
+                                    if len(other) >= 12:
+                                        print("Found rotation!")
+                                        print(r1, r2)
+                            break
+                        else:
                             continue
-                        d1 = s1.dists(0)
-                        for k in range(6):
-                            d2 = s2.dists(k)
-                            found = set([item for p, v in d1.items() if p in d2 for item in v])
-                            other = set([item for p, v in d2.items() if p in d1 for item in v])
-                            
-                            if len(other) >= 12 and s1.pos is not None:
-                                print(f"match with orientation {k}")
-                                if j == 4:
-                                    f =  [v for p, v in d1.items() if p in d2]
-                                    o = [v for p, v in d2.items() if p in d1]
-                                    print(Counter(elem[0] for elem in f))
-                                    print(Counter(elem[1] for elem in f))
-                                    print(Counter(elem[0] for elem in o))
-                                    print(Counter(elem[1] for elem in o))
-                                    print(s1.beacons[74])
-                                    print(s2.beacons[24])
-                                    #exit()
-                                s2.orientation = k
-                                # do the same as before but without the abs to determine which item matched exactly
-                                rd2 = s2.rdists(k)
-                                first_tuple, ids = [(p,v) for p, v in rd2.items() if p in d1][0]
-                                #items = [(p,v) for p, v in rd2.items() if p in d1]
-                                #for first_tuple, ids in items:
-                                s11 = s1.beacons[d1[first_tuple][0]]
-                                s12 = s1.beacons[d1[first_tuple][1]]
-                                s21 = s2.get_beacon(ids[0], 0)
-                                s22 = s2.get_beacon(ids[1], 0)
-                                if j == 4:
-                                    print(len(found))
-                                    print(len(other))
-                                    xs,ys,zs = [],[],[]
-                                    xord = sorted(list(s1.beacons[i] for i in found), key=lambda beacon:beacon.x)
-                                    yord = sorted(list(s1.beacons[i] for i in found), key=lambda beacon:beacon.y)
-                                    zord = sorted(list(s1.beacons[i] for i in found), key=lambda beacon:beacon.z)
-                                    for i, item in enumerate(xord):
-                                        #if i < len(found)-1:
-                                            xs.append(xord[i].x-xord[0].x)
-                                    for i, item in enumerate(yord):
-                                        if i < len(found)-1:
-                                            ys.append(yord[i].y-yord[0].y)
-                                    for i, item in enumerate(zord):
-                                        if i < len(found)-1:
-                                            zs.append(zord[i].z-zord[0].z)
-
-                                    xs2,ys2,zs2 = [],[],[]
-                                    xord2 = sorted(list(s2.beacons[i] for i in other), key=lambda beacon:beacon.x)
-                                    yord2 = sorted(list(s2.beacons[i] for i in other), key=lambda beacon:beacon.y)
-                                    zord2 = sorted(list(s2.beacons[i] for i in other), key=lambda beacon:beacon.z)
-                                    for i, item in enumerate(xord2):
-                                        if i < len(other)-1:
-                                            xs2.append(xord2[i].x-xord2[0].x)
-                                    for i, item in enumerate(yord2):
-                                        if i < len(other)-1:
-                                            ys2.append(yord2[i].y-yord2[0].y)
-                                    for i, item in enumerate(zord2):
-                                        #if i < len(other)-1:
-                                            zs2.append(zord2[i].z-zord2[0].z)
-                                    print(xs)
-                                    print(xs2)
-                                    print(ys)
-                                    print(ys2)
-                                    print(zs)
-                                    print(zs2)
-                                    print("relative 0")
-                                    for item in found:
-                                        print(s1.beacons[item])
-                                    print("relative 4")
-                                    for item in other:
-                                        print(s2.beacons[item])
-                                    print()
-                                    print(first_tuple)
-                                    print(s11)
-                                    print(s12)
-                                    print(s2.get_beacon(ids[0], 0))
-                                    print(s2.get_beacon(ids[1], 0))
-                                    
-                                #print(f"s11 {s11}, s12 {s12}")
-                                #print(f"s21 {s21}, s22 {s22}")
-                                for rot in range(8):
-                                    s21 = s2.get_beacon(ids[0], rot)
-                                    s22 = s2.get_beacon(ids[1], rot)
-                                    #print(s11-s21, s12-s22)
-                                    if(s11-s21 == s12-s22):
-                                        print(f"match with rot {rot}")
-                                        if s2.pos is None:
-                                            s2.rot = rot
-                                            add = s12-s22
-                                            s2.set_pos((add[0]+s1.pos[0],add[1]+s1.pos[1],add[2]+s1.pos[2]))
-                                            s1.beacons.extend(s2.beacons)
-                                            s1.beacons = list(set(s1.beacons))
-                                            s2.beacons = []
-                                            break
-
-                                            #raise ValueError
-            except ValueError:
-                pass
-            for i, s in self.scanners.items():
-                print(i, s)
-                print(s.pos)
-            #exit()
+                        break
+                    #print(d1)
             if all([s.pos is not None for s in self.scanners.values()]):
+                break
+            else:
                 break
     
     def number_of_beacons(self):
-        return sum([scanner.actual_length() for scanner in self.scanners.values()])
+        return sum([len(scanner.beacons) for scanner in self.scanners.values()])
 
 class Scanner:
 
@@ -131,6 +55,27 @@ class Scanner:
         self.pos = None
         self.orientation = 0
         self.rot = 0
+    
+    def set_orientation(self, k):
+        if k != self.orientation:
+            self.orientation = k
+            new_beacons = []
+            for beacon in self.beacons:
+                x, y, z = beacon.x, beacon.y, beacon.z
+                if k == 0:
+                    x, y, z = x, y, z
+                elif k == 1:
+                    x, y, z = y, x, z
+                elif k == 2:
+                    x, y, z = z, y, x
+                elif k == 3:
+                    x, y, z = z, x, y
+                elif k == 4:
+                    x, y, z = x, z, y
+                elif k == 5:
+                    x, y, z = y, z, x
+                new_beacons.append(Beacon(",".join((str(x), str(y), str(z)))))
+            self.beacons = new_beacons
     
     def set_pos(self, pos):
         self.pos = pos
@@ -208,51 +153,98 @@ class Scanner:
     def __repr__(self):
         return f"Scanner({self.id})"
     
-    def actual_length(self):
-        return len(self.beacons)-len(self.used)
-    
-    # Return absolute values
+    # relative dists with rotation
+    def rdists(self, rot):
+        dists = {}
+        for i, b1 in enumerate(self.beacons):
+            for j in range(i+1, len(self.beacons)):
+                b2 = self.beacons[j]
+                #if i != j:
+                if rot == 0:
+                    dists[(b2.x-b1.x, b2.y-b1.y, b2.z-b1.z)] = (i,j)
+                elif rot == 1:
+                    dists[(b1.x-b2.x, b2.y-b1.y, b2.z-b1.z)] = (i,j)
+                elif rot == 2:
+                    dists[(b2.x-b1.x, b1.y-b2.y, b2.z-b1.z)] = (i,j)
+                elif rot == 3:
+                    dists[(b2.x-b1.x, b2.y-b1.y, b1.z-b2.z)] = (i,j)
+        return dists
+    # relative dists
     def dists(self, k):
         dists = {}
         for i, b1 in enumerate(self.beacons):
-            #if i not in self.used:
-                for j in range(i+1, len(self.beacons)):
-                    #if j not in self.used:
-                        b2 = self.beacons[j]
-                        if k == 0:
-                            dists[(abs(b2.x-b1.x), abs(b2.y-b1.y), abs(b2.z-b1.z))] = (i,j)
-                        elif k == 1:
-                            dists[(abs(b2.y-b1.y), abs(b2.x-b1.x), abs(b2.z-b1.z))] = (i,j)
-                        elif k == 2:
-                            dists[(abs(b2.z-b1.z), abs(b2.y-b1.y), abs(b2.x-b1.x))] = (i,j)
-                        elif k == 3:
-                            dists[(abs(b2.z-b1.z), abs(b2.x-b1.x), abs(b2.y-b1.y))] = (i,j)
-                        elif k == 4:
-                            dists[(abs(b2.x-b1.x), abs(b2.z-b1.z), abs(b2.y-b1.y))] = (i,j)
-                        elif k == 5:
-                            dists[(abs(b2.y-b1.y), abs(b2.z-b1.z), abs(b2.x-b1.x))] = (i,j)
-        return dists
+            for j in range(i+1, len(self.beacons)):
+                b2 = self.beacons[j]
+                #if i != j:
+                if k == 0:
+                    dists[(b2.x-b1.x, b2.y-b1.y, b2.z-b1.z)] = (i,j)
+                elif k == 1:
+                    dists[(b2.y-b1.y, b2.x-b1.x, b2.z-b1.z)] = (i,j)
+                elif k == 2:
+                    dists[(b2.z-b1.z, b2.y-b1.y, b2.x-b1.x)] = (i,j)
+                elif k == 3:
+                    dists[(b2.z-b1.z, b2.x-b1.x, b2.y-b1.y)] = (i,j)
+                elif k == 4:
+                    dists[(b2.x-b1.x, b2.z-b1.z, b2.y-b1.y)] = (i,j)
+                elif k == 5:
+                    dists[(b2.y-b1.y, b2.z-b1.z, b2.x-b1.x)] = (i,j)
+                elif k == 6:
+                    dists[(b1.x-b2.x, b1.y-b2.y, b1.z-b2.z)] = (i,j)
+                elif k == 7:
+                    dists[(b1.y-b2.y, b1.x-b2.x, b1.z-b2.z)] = (i,j)
+                elif k == 8:
+                    dists[(b1.z-b2.z, b1.y-b2.y, b1.x-b2.x)] = (i,j)
+                elif k == 9:
+                    dists[(b1.z-b2.z, b1.x-b2.x, b1.y-b2.y)] = (i,j)
+                elif k == 10:
+                    dists[(b1.x-b2.x, b1.z-b2.z, b1.y-b2.y)] = (i,j)
+                elif k == 11:
+                    dists[(b1.y-b2.y, b1.z-b2.z, b1.x-b2.x)] = (i,j)
 
-    # relative
-    def rdists(self, k):
+                elif k == 12:
+                    dists[(b1.x-b2.x, b2.y-b1.y, b2.z-b1.z)] = (i,j)
+                elif k == 13:
+                    dists[(b2.y-b1.y, b1.x-b2.x, b2.z-b1.z)] = (i,j)
+                elif k == 14:
+                    dists[(b2.z-b1.z, b2.y-b1.y, b1.x-b2.x)] = (i,j)
+                elif k == 15:
+                    dists[(b2.z-b1.z, b1.x-b2.x, b1.y-b2.y)] = (i,j)
+                elif k == 16:
+                    dists[(b1.x-b2.x, b2.z-b1.z, b1.y-b2.y)] = (i,j)
+                elif k == 17:
+                    dists[(b1.y-b2.y, b1.z-b2.z, b2.x-b1.x)] = (i,j)
+                elif k == 18:
+                    dists[(b2.x-b1.x, b1.y-b2.y, b1.z-b2.z)] = (i,j)
+                elif k == 19:
+                    dists[(b1.y-b2.y, b2.x-b1.x, b1.z-b2.z)] = (i,j)
+                elif k == 20:
+                    dists[(b1.z-b2.z, b1.y-b2.y, b2.x-b1.x)] = (i,j)
+                elif k == 21:
+                    dists[(b2.z-b1.z, b2.x-b1.x, b1.y-b2.y)] = (i,j)
+                elif k == 22:
+                    dists[(b2.x-b1.x, b1.z-b2.z, b2.y-b1.y)] = (i,j)
+                elif k == 23:
+                    dists[(b2.y-b1.y, b2.z-b1.z, b1.x-b2.x)] = (i,j)
+        return dists
+    # Return absolute values
+    def adists(self, k):
         dists = {}
         for i, b1 in enumerate(self.beacons):
-            for j, b2 in enumerate(self.beacons):
-                if i != j:
-                    if k == 0:
-                        dists[(b2.x-b1.x, b2.y-b1.y, b2.z-b1.z)] = (i,j)
-                    elif k == 1:
-                        dists[(b2.y-b1.y, b2.x-b1.x, b2.z-b1.z)] = (i,j)
-                    elif k == 2:
-                        dists[(b2.z-b1.z, b2.y-b1.y, b2.x-b1.x)] = (i,j)
-                    elif k == 3:
-                        dists[(b2.z-b1.z, b2.x-b1.x, b2.y-b1.y)] = (i,j)
-                    elif k == 4:
-                        dists[(b2.x-b1.x, b2.z-b1.z, b2.y-b1.y)] = (i,j)
-                    elif k == 5:
-                        dists[(b2.y-b1.y, b2.z-b1.z, b2.x-b1.x)] = (i,j)
+            for j in range(i+1, len(self.beacons)):
+                b2 = self.beacons[j]
+                if k == 0:
+                    dists[(abs(b2.x-b1.x), abs(b2.y-b1.y), abs(b2.z-b1.z))] = (i,j)
+                elif k == 1:
+                    dists[(abs(b2.y-b1.y), abs(b2.x-b1.x), abs(b2.z-b1.z))] = (i,j)
+                elif k == 2:
+                    dists[(abs(b2.z-b1.z), abs(b2.y-b1.y), abs(b2.x-b1.x))] = (i,j)
+                elif k == 3:
+                    dists[(abs(b2.z-b1.z), abs(b2.x-b1.x), abs(b2.y-b1.y))] = (i,j)
+                elif k == 4:
+                    dists[(abs(b2.x-b1.x), abs(b2.z-b1.z), abs(b2.y-b1.y))] = (i,j)
+                elif k == 5:
+                    dists[(abs(b2.y-b1.y), abs(b2.z-b1.z), abs(b2.x-b1.x))] = (i,j)
         return dists
-
 
 class Beacon:
 
