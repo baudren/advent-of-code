@@ -20,8 +20,6 @@ def sol(data):
     # First find the target z for each pos, starting by the end
     target = [[(0, "0")]]
     for pos in range(0, 14):
-        print(pos)
-        print(len(target))
         possibilities = []
         for w in range(9, 0, -1):
             for value in range(100000):
@@ -68,14 +66,6 @@ def sol(data):
                         new_.append((value, str(w)))
                         possibilities.append(new_)
                         to_delete = i
-                        #break
-                #else:
-                #    continue
-                #break
-            # else:
-            #     continue
-            # break
-        #print(possibilities)
         if not possibilities:
             print(f"{pos} woopsie")
             exit()
@@ -103,7 +93,6 @@ def sol2(data):
         possibilities = []
         for w in range(1, 10):
             for value in range(100000):
-                #print(w, value)
                 vars = {"x": 0, "y":0, "z":value, "w":w}
                 for line in program.steps[13-pos]:
                     command = line[0]
@@ -138,7 +127,6 @@ def sol2(data):
                                 vars[line[1]] = 1
                             else:
                                 vars[line[1]] = 0
-                    #exit()
                 to_delete = None
                 for i, poss in enumerate(target):
                     if vars["z"] == poss[-1][0]:
@@ -147,13 +135,6 @@ def sol2(data):
                         possibilities.append(new_)
                         to_delete = i
                         break
-                #else:
-                #    continue
-                #break
-            # else:
-            #     continue
-            # break
-        #print(possibilities)
         if not possibilities:
             print(f"{pos} woopsie")
             exit()
