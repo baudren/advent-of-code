@@ -7,7 +7,7 @@ def load():
     return open(get_filename(), 'r').read()
 
 def file_to_lines(a):
-    return [l.strip() for l in a.split("\n")]
+    return a.splitlines()
 
 def file_to_ints(a):
-    return [int(l.strip()) for l in a.split("\n") if l.strip()]
+    return [int(l) for l in a.splitlines()]
