@@ -19,22 +19,21 @@ class PriorityQueue:
 
 class Graph:
     def __init__(self, grid):
-        self.size = len(grid)
+        self.height = len(grid[0])
+        self.width = len(grid)
         self.grid = grid
     
     def in_bounds(self, id: Location):
-        return id.x >= 0 and id.x <= self.size and id.y >= 0 and id.y <= self.size
+        return 0 <= id.x < self.width and 0 <= id.y < self.height
 
     def neighbors(self, id: Location):
-        print(f"neighbors of {id}")
         (x, y, z) = id
         neighbors = [Location(x+1, y, 0), Location(x-1, y, 0), Location(x, y-1, 0), Location(x, y+1, 0)]
         results = filter(self.in_bounds, neighbors)
         locs = []
         for r in results:
-            if self.grid[r.x][r.y].z - z < 2:
+            if 0 <= self.grid[r.x][r.y].z - z < 2:
                 locs.append(self.grid[r.x][r.y])
-        print(locs)
         return locs
 
 
@@ -44,19 +43,19 @@ def parse(a):
         l = []
         for i,elem in enumerate(line):
             if elem == 'S':
-                location = Location(x=i, y=j, z=0)
+                location = Location(x=j, y=i, z=0)
                 start = location
             elif elem == 'E':
-                location = Location(x=i, y=j, z=ord('z')-ord('a'))
+                location = Location(x=j, y=i, z=ord('z')-ord('a'))
                 goal = location
             else:
-                location = Location(x=i, y=j, z=ord(elem)-ord('a'))
+                location = Location(x=j, y=i, z=ord(elem)-ord('a'))
             l.append(location)
         grid.append(l)
     return grid, start, goal
 
 def heuristic(a: Location, b: Location) -> float:
-    return abs(a.z-b.z)
+    return abs(a.x-b.x)+abs(a.y-b.y)+abs(a.z-b.z)**2
 
 def a_star_search(graph , start: Location, goal: Location):
     frontier = PriorityQueue()
@@ -68,29 +67,24 @@ def a_star_search(graph , start: Location, goal: Location):
 
     while not frontier.empty():
         current: Location = frontier.get()
-        print(f"{current=}")
+        print(current)
         if current == goal:
             break
         
         for next in graph.neighbors(current):
             new_cost = cost_so_far[current] + 1
-            if next not in cost_so_far or new_cost < cost_so_far[next]:
+            if next not in cost_so_far or new_cost <= cost_so_far[next]:
                 cost_so_far[next] = new_cost
                 priority = new_cost + heuristic(next, goal)
                 frontier.put(next, priority)
                 came_from[next] = current
-        print(frontier.elements)
     return came_from, cost_so_far
 
 def sol1(a):
     grid, start, goal = parse(a)
     graph = Graph(grid)
     came_from, cost_so_far = a_star_search(graph, start, goal)
-    print(grid)
-    print(cost_so_far)
-    print(cost_so_far[goal])
-
-    return 0
+    return cost_so_far[goal]
 
 
 def sol2(a):
