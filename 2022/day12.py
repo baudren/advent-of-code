@@ -2,7 +2,9 @@ from rich import print
 from utils import load, file_to_lines, file_to_ints
 from collections import namedtuple
 import heapq
+
 Location = namedtuple("Location", "x y z")
+
 
 class PriorityQueue:
     def __init__(self):
@@ -16,6 +18,7 @@ class PriorityQueue:
     
     def get(self) -> Location:
         return heapq.heappop(self.elements)[1]
+
 
 class Graph:
     def __init__(self, grid):
@@ -32,7 +35,7 @@ class Graph:
         results = filter(self.in_bounds, neighbors)
         locs = []
         for r in results:
-            if 0 <= self.grid[r.x][r.y].z - z < 2:
+            if self.grid[r.x][r.y].z - z < 2:
                 locs.append(self.grid[r.x][r.y])
         return locs
 
@@ -55,7 +58,7 @@ def parse(a):
     return grid, start, goal
 
 def heuristic(a: Location, b: Location) -> float:
-    return abs(a.x-b.x)+abs(a.y-b.y)+abs(a.z-b.z)**2
+    return abs(a.x-b.x)+abs(a.y-b.y)+abs(a.z-b.z)
 
 def a_star_search(graph , start: Location, goal: Location):
     frontier = PriorityQueue()
@@ -67,13 +70,12 @@ def a_star_search(graph , start: Location, goal: Location):
 
     while not frontier.empty():
         current: Location = frontier.get()
-        print(current)
         if current == goal:
             break
         
         for next in graph.neighbors(current):
             new_cost = cost_so_far[current] + 1
-            if next not in cost_so_far or new_cost <= cost_so_far[next]:
+            if next not in cost_so_far or new_cost < cost_so_far[next]:
                 cost_so_far[next] = new_cost
                 priority = new_cost + heuristic(next, goal)
                 frontier.put(next, priority)
@@ -88,8 +90,16 @@ def sol1(a):
 
 
 def sol2(a):
-    data = file_to_lines(a)
-    return 0
+    grid, start, goal = parse(a)
+    graph = Graph(grid)
+    total = []
+    for x in range(len(grid)):
+        for y in range(len(grid[0])):
+            if grid[x][y].z == 0:
+                came_from, cost_so_far = a_star_search(graph, grid[x][y], goal)
+                if goal in cost_so_far:
+                    total.append(cost_so_far[goal])
+    return min(total)
 
 test = """Sabqponm
 abcryxxl
@@ -101,7 +111,7 @@ asserts_sol1 = {
         }
 
 asserts_sol2 = {
-        test: 0
+        test: 29
         }
 
 if __name__ == "__main__":
