@@ -1,5 +1,6 @@
 from rich import print
 from utils import load, file_to_lines, file_to_ints
+from time import time
 
 def show_map(map, highest):
     print()
@@ -52,7 +53,7 @@ def spawn_block(map, year, highest):
             if c == "#":
                 map[(x+2, highest+3+y)] = "@"
 
-def falling(map, highest, floor=0):
+def falling(map, highest, floor, floors):
     bottom = 0
     for y in range(highest, highest+6):
         if "@" in [map.get((x,y), " ") for x in range(7)]:
@@ -87,6 +88,8 @@ def falling(map, highest, floor=0):
         else:
             for at in ats:
                 map[at] = "#"
+                if floors[at[0]] < at[1]+1:
+                    floors[at[0]] = at[1]+1
             return True
 
 # TODO can't move if a shape is blocking, but so maxx < 6
@@ -117,32 +120,27 @@ def move(map, direction, highest):
         for at in ats:
             map[(at[0]-1, at[1])] = "@"
 
-def get_new_floor(map, highest, floor):
-    min_ = [floor-1 for _ in range(7)]
-    for y in range(highest, floor-1, -1):
-        for x in range(7):        
-            if map.get((x, y), " ") == "#" and y > min_[x]:
-                min_[x] = y
-    return min(min_)+1
-
-def evolve(map, pattern, start, highest, floor=0):
+def evolve(map, pattern, start, highest, floors=[]):
+    t0 = time()
     steps = 0
     stopped = False
+    tt = 0
+    floor = min(floors)
     while not stopped:
         direction = pattern[(start+steps)%len(pattern)]
         move(map, direction, highest-steps)
-        stopped = falling(map, highest-steps, floor)
+        stopped = falling(map, highest-steps, floor, floors)
         steps += 1
-    floor = get_new_floor(map, highest-steps+6, floor)
-    return start + steps, floor
+    return start + steps, floors
 
 def sol1(pattern):
     i = 0
     map = {}
     highest = 0
+    floors = [0 for _ in range(7)]
     for year in range(2022):
         spawn_block(map, year, highest)
-        i, _ = evolve(map, pattern, i, highest)
+        i, _ = evolve(map, pattern, i, highest, floors)
         highest = compute_highest(map)
     return highest
 
@@ -156,20 +154,49 @@ def sol2(pattern):
     map = {}
     highest = 0
     floor = 0
+    floors = [floor for _ in range(7)]
+    concordances = set()
+
+    loop_concordance = ()
+    loop_finished = False
+    start_highest = 0
+    heights = []
+    year_start, year_end = 0, 0
     for year in range(1_000_000_000_000):
-        if year % 100_000 == 0:
-            print(year)
         spawn_block(map, year, highest)
-        i, new_floor = evolve(map, pattern, i, highest, floor)
-        highest = compute_highest(map)
-        if new_floor != floor:
-            floor = new_floor
+        i, floors = evolve(map, pattern, i, highest, floors)
+        a, b = i%len(test), year%len(blocks)
+        if (a, b) not in concordances and not loop_concordance:
+            concordances.add((a, b))
+        elif (a, b) in concordances and not loop_concordance:
+            print("loop detected")
+            start_highest = highest
+            loop_concordance = (a, b)
+            year_start = year
+        elif (a, b) == loop_concordance and not loop_finished:
+            year_end = year
+            loop_finished = True
+            print(f"Loop starts after block {year_start} has fallen and ends when {year_end-year_start} additional blocks have fallen")
+            break
+        new_highest = compute_highest(map)
+        if loop_concordance:
+            heights.append(new_highest-highest)
+        highest = new_highest
+        if min(floors) > floor:
+            floor = min(floors)
+            floors = [floor for _ in range(7)]
             cleanup(map, floor)
-            #print(len(map))
-        #show_map(map, highest+6)
-            #print(floor)
-        #input()
-    return highest
+        # debug
+        #show_map_l(map, highest+6, floor)
+
+
+    print(start_highest)
+    print(len(heights))
+    print(heights)
+    diff = 2022-2-year_start
+    print()
+    print(highest)
+    return start_highest+sum(heights)*diff//len(heights)+sum(heights[:diff%len(heights)])
 
 test = """>>><<><>><<<>><>>><<<>>><<<><<<>><>><<>>"""
 asserts_sol1 = {
