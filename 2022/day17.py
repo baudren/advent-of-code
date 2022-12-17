@@ -12,16 +12,6 @@ def show_map(map, highest):
     print("+-------+")
     print()
 
-def show_map_l(map, highest, low):
-    print()
-    for y in range(highest, low-1, -1):
-        l = "|"
-        for x in range(0, 7):
-            l += map.get((x, y), '.')
-        print(l+"|")
-    print("+-------+")
-    print()
-
 blocks = (
     """####""",
     """.#.
@@ -53,7 +43,7 @@ def spawn_block(map, year, highest):
             if c == "#":
                 map[(x+2, highest+3+y)] = "@"
 
-def falling(map, highest, floor, floors):
+def falling(map, highest):
     bottom = 0
     for y in range(highest, highest+6):
         if "@" in [map.get((x,y), " ") for x in range(7)]:
@@ -69,7 +59,7 @@ def falling(map, highest, floor, floors):
                 count += 1
                 if map.get((x, y-1), " ") in (" ", "@"):
                     empty += 1
-    if bottom == floor:
+    if bottom == 0:
         for at in ats:
             map[at] = "#"
         return True
@@ -88,11 +78,8 @@ def falling(map, highest, floor, floors):
         else:
             for at in ats:
                 map[at] = "#"
-                if floors[at[0]] < at[1]+1:
-                    floors[at[0]] = at[1]+1
             return True
 
-# TODO can't move if a shape is blocking, but so maxx < 6
 def move(map, direction, highest):
     minx, maxx = 6, 0
     left_stuck, right_stuck = False, False
@@ -120,18 +107,17 @@ def move(map, direction, highest):
         for at in ats:
             map[(at[0]-1, at[1])] = "@"
 
-def evolve(map, pattern, start, highest, floors=[]):
+def evolve(map, pattern, start, highest):
     t0 = time()
     steps = 0
     stopped = False
     tt = 0
-    floor = min(floors)
     while not stopped:
         direction = pattern[(start+steps)%len(pattern)]
         move(map, direction, highest-steps)
-        stopped = falling(map, highest-steps, floor, floors)
+        stopped = falling(map, highest-steps)
         steps += 1
-    return start + steps, floors
+    return start + steps
 
 def sol1(pattern):
     i = 0
@@ -140,7 +126,7 @@ def sol1(pattern):
     floors = [0 for _ in range(7)]
     for year in range(2022):
         spawn_block(map, year, highest)
-        i, _ = evolve(map, pattern, i, highest, floors)
+        i = evolve(map, pattern, i, highest)
         highest = compute_highest(map)
     return highest
 
@@ -153,10 +139,7 @@ def sol2(pattern):
     i = 0
     map = {}
     highest = 0
-    floor = 0
-    floors = [floor for _ in range(7)]
     concordances = set()
-
     loop_concordance = ()
     loop_finished = False
     start_highest = 0
@@ -164,39 +147,25 @@ def sol2(pattern):
     year_start, year_end = 0, 0
     for year in range(1_000_000_000_000):
         spawn_block(map, year, highest)
-        i, floors = evolve(map, pattern, i, highest, floors)
-        a, b = i%len(test), year%len(blocks)
+        i = evolve(map, pattern, i, highest)
+        a, b = i%len(pattern), year%len(blocks)
         if (a, b) not in concordances and not loop_concordance:
             concordances.add((a, b))
         elif (a, b) in concordances and not loop_concordance:
-            print("loop detected")
             start_highest = highest
             loop_concordance = (a, b)
             year_start = year
         elif (a, b) == loop_concordance and not loop_finished:
             year_end = year
             loop_finished = True
-            print(f"Loop starts after block {year_start} has fallen and ends when {year_end-year_start} additional blocks have fallen")
             break
         new_highest = compute_highest(map)
         if loop_concordance:
             heights.append(new_highest-highest)
         highest = new_highest
-        if min(floors) > floor:
-            floor = min(floors)
-            floors = [floor for _ in range(7)]
-            cleanup(map, floor)
-        # debug
-        #show_map_l(map, highest+6, floor)
 
-
-    print(start_highest)
-    print(len(heights))
-    print(heights)
-    diff = 2022-2-year_start
-    print()
-    print(highest)
-    return start_highest+sum(heights)*diff//len(heights)+sum(heights[:diff%len(heights)])
+    diff = 1_000_000_000_000-year_start
+    return start_highest+sum(heights)*(diff//len(heights))+sum(heights[:diff%len(heights)])
 
 test = """>>><<><>><<<>><>>><<<>>><<<><<<>><>><<>>"""
 asserts_sol1 = {
