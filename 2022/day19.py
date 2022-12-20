@@ -9,6 +9,7 @@ def parse_costs(cost_line):
     return costs
 
 ores = ["geode", "obsidian", "clay", "ore"]
+higher = ["geode", "obsidian", "clay"]
 
 class Blueprint:
 
@@ -25,47 +26,41 @@ class Blueprint:
         print(self.robot_costs)
 
     def quality(self, minutes):
+        max_ore_cost = max([self.robot_costs[ore]["ore"] for ore in ores])
+        print(max_ore_cost)
         # Each active robots collects one item
-        qualities = []
-        for weight in range(-4, 4):
-            debug = False #weight == -4
-            self.robots = {"ore": 1, "clay": 0, "obsidian": 0, "geode": 0}
-            self.items = {"ore": 0, "clay": 0, "obsidian": 0, "geode": 0}
-            for minute in range(1, minutes+1):
-                # Can we create a robot?
-                new_robots = {}
+        self.robots = {"ore": 1, "clay": 0, "obsidian": 0, "geode": 0}
+        self.items = {"ore": 0, "clay": 0, "obsidian": 0, "geode": 0}
+        for minute in range(1, minutes+1):
+            # Do we have max_ore_cost ore-collecting robots?
+            new_robots = {}
+            if self.robot_costs["ore"]["ore"] < max_ore_cost and self.robots["ore"] < max_ore_cost:
+                if self.items["ore"] >= self.robot_costs["ore"]["ore"]:
+                    new_robots["ore"] = 1
+                    self.items["ore"] -= self.robot_costs["ore"]["ore"]
+            else:
                 for ore in ores:
                     can_build = True
-                    close_enough = 0
                     for type, cost in self.robot_costs[ore].items():
                         if self.items[type] < cost:
                             can_build = False
-                        if self.items[type] >= 0 and self.items[type] >= cost-self.robots[type]-weight:
-                            close_enough += 1
                     if can_build:
                         new_robots[ore] = 1
                         for type, cost in self.robot_costs[ore].items():
                             self.items[type] -= cost
-                    elif close_enough == len(self.robot_costs[ore]):
-                        #print(f"we are close enough to build a {ore}-collecting robot, stopping")
                         break
 
-                for robot in self.robots:
-                    self.items[robot] += self.robots[robot]
-                # Robots are ready
-                for k, v in new_robots.items():
-                    self.robots[k] += v
-                if debug:
-                    print(minute)
-                    print(self.items)
-                    print(self.robots)
-                    print()
-                    input()
-            print(weight, self.index*self.items["geode"])
-            print(self.items)
-            print(self.robots)
-            qualities.append(self.index*self.items["geode"])
-        return max(qualities)
+            for robot in self.robots:
+                self.items[robot] += self.robots[robot]
+            # Robots are ready
+            for k, v in new_robots.items():
+                self.robots[k] += v
+            print(minute)
+            print(f"{self.items=}")
+            print(f"{self.robots=}")
+            print()
+            input()
+        return self.index*self.items["geode"]
 
 def sol1(a):
     data = file_to_lines(a)
