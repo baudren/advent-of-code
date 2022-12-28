@@ -15,20 +15,6 @@ class Valve:
     def __repr__(self):
         return f"{self.key}: {self.pressure} (go to {self.neighbours})"
 
-
-class PriorityQueue:
-    def __init__(self):
-        self.elements = []
-    
-    def empty(self) -> bool:
-        return not self.elements
-    
-    def put(self, item, priority):
-        heapq.heappush(self.elements, (priority, item))
-    
-    def get(self):
-        return heapq.heappop(self.elements)[1]
-    
 def get_distance(valves, source, target):
     frontier = set((source, ))
     distance = 0
@@ -81,6 +67,7 @@ def explore(valves, non_zero, start):
             max = r[1]
     return max
 
+
 class PriorityQueue:
     def __init__(self):
         self.elements = []
@@ -94,11 +81,19 @@ class PriorityQueue:
     def get(self):
         return heapq.heappop(self.elements)[1]
 
+
+def get_rest_score(valves, visited, minutes):
+    score = 0
+    for k, v in valves.items():
+        if k not in visited[0] and k not in visited[1] and v.pressure != 0:
+            score += v.pressure * (26-min(minutes))
+    return score
+
+
 def explore_elephant(valves, non_zero, start):
     distances = create_distances(valves, non_zero)
     frontier = PriorityQueue()
     frontier.put(((("AA", ), ("AA", )), 0, (1, 1)), 0)
-    paths = [((("AA", ), ("AA", )), 0, (1, 1))]
     finished_paths = []
     visited_paths = set()
     starts = set()
@@ -107,9 +102,11 @@ def explore_elephant(valves, non_zero, start):
         current_paths, current_cost, current_times = frontier.get()
         if current_cost > max_cost:
             max_cost = current_cost
-            print(max_cost)
 
-        #current_paths, current_cost, current_times = paths.pop()
+        # This is really important!
+        if current_cost + get_rest_score(valves, current_paths, current_times) < max_cost:
+            continue
+
         if current_paths in visited_paths:
             finished_paths.append((current_paths, current_cost, current_times))
             continue
@@ -132,7 +129,7 @@ def explore_elephant(valves, non_zero, start):
                 i_path, i_current_time, i_cost = current_paths[0], current_times[0], 0
                 if next not in i_path and next not in e_path:
                     found, found_i = True, True
-                    new_cost = (27-i_current_time-distances[i_current][next]-1)*valves[next].pressure
+                    new_cost = (26-i_current_time-distances[i_current][next])*valves[next].pressure
                     new_time = i_current_time + distances[i_current][next]+1
                     new_path = i_path + (next, )
                     if new_time <= 26:
@@ -141,13 +138,12 @@ def explore_elephant(valves, non_zero, start):
                         e_path, e_current_time, e_cost = current_paths[1], current_times[1], 0
                         if next_e not in i_path and next_e not in e_path:
                             found, found_e = True, True
-                            new_cost = (27-e_current_time-distances[e_current][next_e]-1)*valves[next_e].pressure
+                            new_cost = (26-e_current_time-distances[e_current][next_e])*valves[next_e].pressure
                             new_time = e_current_time + distances[e_current][next_e]+1
                             new_path = e_path + (next_e, )
                             if new_time <= 26:
                                 e_path, e_current_time, e_cost = new_path, new_time, new_cost
                             if (e_path, i_path) not in starts and (i_path, e_path) not in starts:
-                                paths.append(((i_path, e_path), current_cost+i_cost+e_cost, (i_current_time, e_current_time)))
                                 frontier.put(((i_path, e_path), current_cost+i_cost+e_cost, (i_current_time, e_current_time)), -current_cost-i_cost-e_cost)
                                 starts.add((i_path, e_path))
 
@@ -158,13 +154,12 @@ def explore_elephant(valves, non_zero, start):
                 i_path, i_current_time, i_cost = current_paths[0], current_times[0], 0
                 if next not in i_path and next not in e_path:
                     found, found_i = True, True
-                    new_cost = (27-i_current_time-distances[i_current][next]-1)*valves[next].pressure
+                    new_cost = (26-i_current_time-distances[i_current][next])*valves[next].pressure
                     new_time = i_current_time + distances[i_current][next]+1
                     new_path = i_path + (next, )
                     if new_time <= 26:
                         i_path, i_current_time, i_cost = new_path, new_time, new_cost
                     if (e_path, i_path) not in starts and (i_path, e_path) not in starts:
-                        paths.append(((i_path, e_path), current_cost+i_cost+e_cost, (i_current_time, e_current_time)))
                         frontier.put(((i_path, e_path), current_cost+i_cost+e_cost, (i_current_time, e_current_time)), -current_cost-i_cost-e_cost)
                         starts.add((i_path, e_path))
                     else:
@@ -182,22 +177,13 @@ def explore_elephant(valves, non_zero, start):
                     if new_time <= 26:
                         e_path, e_current_time, e_cost = new_path, new_time, new_cost
                     if (e_path, i_path) not in starts and (i_path, e_path) not in starts:
-                        paths.append(((i_path, e_path), current_cost+i_cost+e_cost, (i_current_time, e_current_time)))
                         frontier.put(((i_path, e_path), current_cost+i_cost+e_cost, (i_current_time, e_current_time)), -current_cost-i_cost-e_cost)
                         starts.add((i_path, e_path))
                     else:
                         finished_paths.append(((i_path, e_path), current_cost+i_cost+e_cost, (i_current_time, e_current_time)))
         if not found:
             finished_paths.append(((i_path, e_path), current_cost, current_times))
-            frontier.put(((i_path, e_path), current_cost, current_times), -current_cost)
-    sorted_paths = sorted(finished_paths, key=lambda x: x[2])
-    print(len(sorted_paths))
-    max = 0
-    for r in sorted_paths:
-        if r[1] > max:
-            print(r)
-            max = r[1]
-    return max
+    return max_cost
 
 def sol1(a):
     data = file_to_lines(a)
