@@ -6,22 +6,67 @@ from utils import *
 
 # Define which function to apply to parse the input data, from the text file or the text areas
 # file_to_lines, file_to_ints, line_to_ints, line_to_str
-basic_transform = .
+basic_transform = file_to_lines
 
 answer = None
 st.session_state.file_exists = os.path.exists(get_filename())
 
+digits = {
+    "one": "1",
+    "two": "2",
+    "three": "3",
+    "four": "4",
+    "five": "5",
+    "six": "6",
+    "seven": "7",
+    "eight": "8",
+    "nine": "9",
+}
 
 with st.sidebar:
     select1 = st.selectbox("Part 1", ['examples', 'data'], key='select1')
     select2 = st.selectbox("Part 2", ['examples', 'data'], key='select2')
 
+
 def sol1(data):
-    return 0
+    total = 0
+    for line in data:
+        start, stop = 0, 0
+        for c in line:
+            try:
+                start = int(c)
+                break
+            except:
+                pass
+        for c in line[::-1]:
+            try:
+                stop = int(c)
+                break
+            except:
+                pass
+        total += int(f"{start}{stop}")
+    return total
 
 
 def sol2(data):
-    return 0
+    new_data = []
+    for line in data:
+        line = line.replace("twone", "twoone")
+        line = line.replace("eightwo", "eighttwo")
+        line = line.replace("oneight", "oneeight")
+        modified = True
+        while modified:
+            modified = False
+            digit_places = {}
+            for k, v in digits.items():
+                digit_places[k] = line.find(k)
+            digit_places = {k: v for k, v in sorted(digit_places.items(), key=lambda item: item[1])}
+            for k, v in digit_places.items():
+                if v != -1:
+                    line = line.replace(k, digits[k], 1)
+                    modified = True
+        new_data.append(line)
+    return sol1(new_data)
 
 
 if not st.session_state.file_exists:
