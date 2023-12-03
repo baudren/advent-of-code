@@ -6,7 +6,7 @@ from utils import *
 
 # Define which function to apply to parse the input data, from the text file or the text areas
 # file_to_lines, file_to_ints, line_to_ints, line_to_str
-basic_transform = .
+basic_transform = file_to_lines
 
 answer = None
 st.session_state.file_exists = os.path.exists(get_filename())
@@ -48,11 +48,16 @@ else:
     st.markdown("#### Example")
     c1, c2 = st.columns(2)
     with c1:
-        data = st.text_area('example 1')
+        value = st.session_state.get("example1_data", "")
+        data = st.text_area('example 1', value=value)
+        if data:
+            st.session_state["example1_data"] = data
         data = basic_transform(data)
     with c2:
-        answer = st.text_input('answer 1')
-
+        value = st.session_state.get("example1_answer", "")
+        answer = st.text_input('answer 1', value=value)
+        if answer:
+            st.session_state["example1_answer"] = answer
 if data:
     if answer:
         answer = int(answer)
@@ -74,10 +79,16 @@ else:
     st.markdown("#### Example")
     c1, c2 = st.columns(2)
     with c1:
-        data = st.text_area('example 2')
+        value = st.session_state.get("example2_data", "")
+        data = st.text_area('example 2', value=value)
+        if data:
+            st.session_state["example2_data"] = data
         data = basic_transform(data)
     with c2:
-        answer = st.text_input('answer 2')
+        value = st.session_state.get("example2_answer", "")
+        answer = st.text_input('answer 2', value=value)
+        if answer:
+            st.session_state["example2_answer"] = answer
 
 if data:
     if answer:
