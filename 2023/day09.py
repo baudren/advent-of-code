@@ -16,13 +16,39 @@ with st.sidebar:
     select1 = st.selectbox("Part 1", ['examples', 'data'], key='select1')
     select2 = st.selectbox("Part 2", ['examples', 'data'], key='select2')
 
+def get_next_value(values):
+    diffs = []
+    for i, v in enumerate(values[1:]):
+        diffs.append(v-values[i])
+    if set(diffs) == set([0]):
+        return values[-1]
+    else:
+        next_value = get_next_value(diffs)
+        return values[-1]+next_value
+
+def get_previous_value(values):
+    diffs = []
+    for i, v in enumerate(values[1:]):
+        diffs.append(v-values[i])
+    if set(diffs) == set([0]):
+        return values[0]
+    else:
+        previous_value = get_previous_value(diffs)
+        return values[0]-previous_value
+
 def sol1(data):
     total = 0
+    for line in data:
+        values = [int(e) for e in line.split()]
+        total += get_next_value(values)
     return total
 
 
 def sol2(data):
     total = 0
+    for line in data:
+        values = [int(e) for e in line.split()]
+        total += get_previous_value(values)
     return total
 
 
