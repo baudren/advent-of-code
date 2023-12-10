@@ -38,6 +38,18 @@ def sol1(data):
 def is_finished(current):
     return all(e[-1] == 'Z' for e in current)
 
+def get_value_after_step(instructions, mapping, start, count):
+    step = 0
+    dest = start
+    while step < count:
+        for index, instruction in enumerate(instructions):
+            step += 1
+            dest = mapping[dest][instruction]
+            print(step, dest)
+            if step >= count:
+                break
+    return dest
+
 
 def sol2(data):
     instructions = [0 if e == 'L' else 1 for e in data[0]]
@@ -53,7 +65,6 @@ def sol2(data):
             current.append(key)
     
     steps_total = {}
-    loops = {}
     visited = {}
     for c in current:
         visited[c] = {}
@@ -65,14 +76,9 @@ def sol2(data):
             for index, instruction in enumerate(instructions):
                 steps += 1
                 cur = mapping[cur][instruction]
-                if (cur, index+1) in visited[c]:
+                if cur[-1] == 'Z':
+                    steps_total[c] = steps
                     should_break = True
-                    loops[c] = steps
-                    break
-                else:
-                    visited[c][(cur, index+1)] = steps
-                    if cur[-1] == 'Z':
-                        steps_total[c] = steps
     keys_sorted = sorted(steps_total, key=steps_total.get)
     lcm = steps_total[keys_sorted[0]]
     for key in keys_sorted[1:]:
@@ -120,7 +126,6 @@ if data:
             st.markdown(f"**:red[Example failing: {sol1(data)=} != {answer}]**")
         else:
             st.markdown("**:green[All good]**")
-    st.markdown(f"{data[:10]=}...")
     st.markdown(f"{sol1(data)=}")
 
 
