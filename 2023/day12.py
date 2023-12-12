@@ -21,36 +21,12 @@ with st.sidebar:
 
 def sol1(data):
     total = 0
-    for line in data[0:1]:
+    for i, line in enumerate(data):
         row = [c for c in line.split()[0]]
         clusters = [int(e) for e in line.split()[1].split(",")]
         value = count_perm_rec(row, clusters)
-        #st.code((row, clusters, value))
         total += value
     return total
-
-def get_nth_cluster(row, n):
-    cluster = []
-    count = 0
-    for i, c in enumerate(row):
-        if cluster:
-            if c == '.':
-                count += 1
-                if '#' not in cluster:
-                    cluster = []
-                else:
-                    if count == n:
-                        break
-                    else:
-                        cluster = []
-            else: 
-                cluster.append(c)
-        else:
-            if c in ['?', '#']:
-                cluster.append(c)
-    if count == n:
-        return cluster
-    return []
 
 def get_first_real_cluster(row):
     cluster = 0
@@ -73,6 +49,7 @@ def count_perm_cont(row, clusters):
     n = len(clusters)+1  # number of slots to put this freedom
     # count with repetitions
     return f(n+k-1)//(f(k)*f(n-1))
+
 
 def get_max_cluster(row):
     clusters = []
@@ -129,21 +106,17 @@ def count_perm_rec(row, clusters):
         total = 0
     elif cd+ci < sum(clusters):
         total = 0
-    #elif row.count('#') == sum(clusters):
-    #    total = 1
     else:
         if get_max_cluster(row) > max(clusters):
             total = 0
         elif get_min_cluster(row) > min(clusters):
             total = 0
-        elif len(row) == clusters[0] and row.count('#') == clusters[0]:
+        elif len(row) == clusters[0] and cd+ci == clusters[0]:
             total = 1
         else:
             cluster = clusters[0]
-            # Iterate for all positions, until finding a fixed one (not a ?)
-            # TODO ignore leading . row = [c for c in "".join(row).strip('.')]
             tested = []
-            for i in range(len(row)-cluster):
+            for i in range(len(row)+1-cluster):
                 if row[i] == '.':
                     continue
                 row_mod = row.copy()
@@ -152,7 +125,7 @@ def count_perm_rec(row, clusters):
                     if row[j] == '?':
                         row_mod[j] = '.'
                 for j in range(cluster+1):
-                    if row[i+j] == '?':
+                    if i+j < len(row) and row[i+j] == '?':
                         if j < cluster:
                             row_mod[i+j] = '#'
                         else:
@@ -163,29 +136,35 @@ def count_perm_rec(row, clusters):
                     break
                 else:
                     tested.append(row_mod)
-                if row_mod[i+cluster] == '#':
+                # count the # until i, if > cluster, break
+                if debug: st.code(("".join(row_mod[i:i+cluster+1]), row_mod[i:i+cluster+1].count('#')))
+                if row_mod[i:i+cluster].count('#') != cluster:
                     value = 0
+                elif row_mod[:i+cluster].count('#') > cluster:
+                    value = 0
+                    break
                 elif get_first_real_cluster(row_mod) != cluster:
                     value = 0
                 else:
-                    tested
+                    if debug: st.code("tested: "+"\n        ".join(["".join(t) for t in tested]))
                     value = count_perm_rec(row_mod[i+cluster+1:], clusters[1:])
                 if debug: st.code(f"Finished testing index {i}: {''.join(row_mod)}, {cluster}({clusters}) -> {value}")
                 total += value
                 #if row[i] == '#': 
                 #    st.code("HERE")
                 #    break
-    if debug: st.code((row, clusters, total))
+    if debug: st.code(("".join(row), clusters, total))
     count_perm_rec_cache[key] = total
     return total
 
 def sol2(data):
     total = 0
-    for line in data:
+    for i, line in enumerate(data):
         row_unfolded = '?'.join(line.split()[0] for _ in range(5))
         row = [c for c in row_unfolded]
         clusters = [int(e) for e in line.split()[1].split(",")]*5
-        total += count_perm_rec(row, clusters)
+        value = count_perm_rec(row, clusters)
+        total += value
     return total
 
 
@@ -261,45 +240,3 @@ if data:
         else:
             st.markdown(":green[All good]")
     st.markdown(f"{sol2(data)=}")
-
-def count_damaged(row):
-    clusters = []
-    current_cluster = 0
-    for c in row.values():
-        if c == '.' and current_cluster:
-            clusters.append(current_cluster)
-            current_cluster = 0
-        elif c == '#':
-            current_cluster += 1
-    if current_cluster:
-        clusters.append(current_cluster)
-    return clusters
-
-
-valid_cache = {}
-def is_valid(row, clusters):
-    key = (tuple(row), tuple(clusters))
-    if key in valid_cache:
-        return valid_cache[key]
-    valid = True
-    cd, cp, ci = row.count('#'), row.count('.'), row.count('?')
-
-    if cd > sum(clusters):
-        valid = False
-    if valid and cd+ci < sum(clusters):
-        valid = False
-    if valid:
-        if get_max_cluster(row) > max(clusters):
-            valid = False
-        elif get_min_cluster(row) > min(clusters):
-            valid = False
-        # Forced to recurse
-        # TODO ignore leading .
-        #row = [c for c in "".join(row).strip('.')]
-        for i, c in enumerate(row):
-            pass
-
-    if debug: st.code("\n".join(("is valid?", str(valid), str(row), str(clusters))))
-    valid_cache[key] = valid
-    return valid
-
