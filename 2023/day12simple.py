@@ -1,6 +1,5 @@
 from math import factorial as f
 from rich import print
-import streamlit as st
 import os
 import itertools
 
@@ -11,20 +10,14 @@ debug = False
 # file_to_lines, file_to_ints, line_to_ints, line_to_str
 basic_transform = file_to_lines
 
-answer = None
-st.session_state.file_exists = os.path.exists(get_filename())
-
-
-with st.sidebar:
-    select1 = st.selectbox("Part 1", ['examples', 'data'], key='select1')
-    select2 = st.selectbox("Part 2", ['examples', 'data'], key='select2')
 
 def sol1(data):
     total = 0
-    for line in data[0:1]:
+    for line in data:
         row = [c for c in line.split()[0]]
         clusters = [int(e) for e in line.split()[1].split(",")]
         value = count_perm_rec(row, clusters)
+        print(value)
         #st.code((row, clusters, value))
         total += value
     return total
@@ -112,7 +105,6 @@ count_perm_rec_cache = {}
 def count_perm_rec(row, clusters):
     key = (tuple(row), tuple(clusters))
     row = row.copy()
-    if debug: st.code(("".join(row), clusters))
     if key in count_perm_rec_cache:
         return count_perm_rec_cache[key]
     cd, cp, ci = row.count('#'), row.count('.'), row.count('?')
@@ -147,7 +139,6 @@ def count_perm_rec(row, clusters):
                 if row[i] == '.':
                     continue
                 row_mod = row.copy()
-                if debug: st.code("".join(row_mod))
                 for j in range(i):
                     if row[j] == '?':
                         row_mod[j] = '.'
@@ -157,7 +148,6 @@ def count_perm_rec(row, clusters):
                             row_mod[i+j] = '#'
                         else:
                             row_mod[i+j] = '.'
-                if debug: st.code(f"Testing index {i}: {''.join(row_mod)}, {cluster}({clusters})")
                 if row_mod in tested:
                     value = 0
                     break
@@ -170,12 +160,10 @@ def count_perm_rec(row, clusters):
                 else:
                     tested
                     value = count_perm_rec(row_mod[i+cluster+1:], clusters[1:])
-                if debug: st.code(f"Finished testing index {i}: {''.join(row_mod)}, {cluster}({clusters}) -> {value}")
                 total += value
                 #if row[i] == '#': 
                 #    st.code("HERE")
                 #    break
-    if debug: st.code((row, clusters, total))
     count_perm_rec_cache[key] = total
     return total
 
@@ -189,117 +177,9 @@ def sol2(data):
     return total
 
 
-if not st.session_state.file_exists:
-    data = st.text_area("input text from site")
-    if data:
-        write_to_file(data)
-        st.rerun()
-    st.markdown("This should disappear after execution")
-    st.divider()
-
-else:
-    data = load()
-
-if not data:
-    st.stop()
+data = load()
 
 data = basic_transform(data)
 data_bk = data.copy()
-
-st.markdown("### Part 1")
-if select1 == 'data':
-    st.markdown("#### Final answer")
-else:
-    st.markdown("#### Example")
-    c1, c2 = st.columns(2)
-    with c1:
-        value = st.session_state.get("example1_data", "")
-        data = st.text_area('example 1', value=value)
-        if data:
-            st.session_state["example1_data"] = data
-        data = basic_transform(data)
-    with c2:
-        value = st.session_state.get("example1_answer", "")
-        answer = st.text_input('answer 1', value=value)
-        if answer:
-            st.session_state["example1_answer"] = answer
-if data:
-    if answer:
-        answer = int(answer)
-        if sol1(data) != answer:
-            st.markdown(f"**:red[Example failing: {sol1(data)=} != {answer}]**")
-        else:
-            st.markdown("**:green[All good]**")
-    st.markdown(f"{sol1(data)=}")
-
-st.divider()
-st.markdown("### Part 2")
-answer = None
-data = data_bk
-if select2 == 'data':
-    st.markdown("#### Final answer")
-else:
-    st.markdown("#### Example")
-    c1, c2 = st.columns(2)
-    with c1:
-        value = st.session_state.get("example2_data", "")
-        data = st.text_area('example 2', value=value)
-        if data:
-            st.session_state["example2_data"] = data
-        data = basic_transform(data)
-    with c2:
-        value = st.session_state.get("example2_answer", "")
-        answer = st.text_input('answer 2', value=value)
-        if answer:
-            st.session_state["example2_answer"] = answer
-
-if data:
-    if answer:
-        answer = int(answer)
-        if sol2(data) != answer:
-            st.markdown(f"**:red[Example failing: {sol2(data)=} != {answer}]**")
-        else:
-            st.markdown(":green[All good]")
-    st.markdown(f"{sol2(data)=}")
-
-def count_damaged(row):
-    clusters = []
-    current_cluster = 0
-    for c in row.values():
-        if c == '.' and current_cluster:
-            clusters.append(current_cluster)
-            current_cluster = 0
-        elif c == '#':
-            current_cluster += 1
-    if current_cluster:
-        clusters.append(current_cluster)
-    return clusters
-
-
-valid_cache = {}
-def is_valid(row, clusters):
-    key = (tuple(row), tuple(clusters))
-    if key in valid_cache:
-        return valid_cache[key]
-    valid = True
-    cd, cp, ci = row.count('#'), row.count('.'), row.count('?')
-
-    if cd > sum(clusters):
-        valid = False
-    if valid and cd+ci < sum(clusters):
-        valid = False
-    if valid:
-        if get_max_cluster(row) > max(clusters):
-            valid = False
-        elif get_min_cluster(row) > min(clusters):
-            valid = False
-        # Forced to recurse
-        # TODO ignore leading .
-        #row = [c for c in "".join(row).strip('.')]
-        for i, c in enumerate(row):
-            pass
-
-    if debug: st.code("\n".join(("is valid?", str(valid), str(row), str(clusters))))
-    valid_cache[key] = valid
-    return valid
-
+print(sol1(data))
+print(sol2(data))
