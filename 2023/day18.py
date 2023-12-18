@@ -16,48 +16,6 @@ with st.sidebar:
     select1 = st.selectbox("Part 1", ['examples', 'data'], key='select1')
     select2 = st.selectbox("Part 2", ['examples', 'data'], key='select2')
 
-def is_inside(grid, xx, yy, bounds):
-    
-    crosses = 0
-    on_edge = 0
-    points = [(i, yy) for i in range(bounds[0], xx+1)]
-    for point in points:
-        x, y = point
-        if point in grid and not on_edge:
-            if (x, y-1) in grid and (x, y+1) in grid:# and (x+1, y) not in grid:
-                crosses += 1
-            elif (x, y+1) in grid:
-                on_edge = -1
-            elif (x, y-1) in grid:
-                on_edge = 1
-        elif point in grid and on_edge != 0:
-            if on_edge == 1 and (x, y+1) in grid:# and (x+1, y) not in grid:
-                crosses += 1
-                on_edge = 0
-            elif on_edge == -1 and (x, y-1) in grid:# and (x+1, y) not in grid:
-                crosses += 1
-                on_edge = 0
-    return crosses % 2 == 1
-
-
-def dig(grid, bounds):
-    to_dig = []
-    for y in range(bounds[2], bounds[3]+1):
-        for x in range(bounds[0], bounds[1]+1):
-            if (x, y) not in grid:
-                if is_inside(grid, x, y, bounds):
-                    to_dig.append((x, y))
-    for elem in to_dig:
-        grid.add(elem)
-
-def display_grid(grid, bounds):
-    display = []
-    for y in range(bounds[2], bounds[3]+1):
-        line = []
-        for x in range(bounds[0], bounds[1]+1):
-            line.append('#' if (x, y) in grid else '.')
-        display.append(''.join(line))
-    st.code("\n".join(display))
 
 directions = {
     0: 'R',
@@ -65,82 +23,101 @@ directions = {
     2: 'L',
     3: 'U',
 }
-def sol1(data):
+
+def get_polygon(data, offset, part_one=True):
     current = (0, 0)
-    grid = set([current])
-    bounds = [0, 0, 0, 0]
-    for line in data:
+    polygon = [(current[0]+offset[0], current[1]+offset[1]), ]
+    for i, line in enumerate(data[:-1]):
         d, step, color = line.split()
-        step = int(step)
-        for i in range(step):
-            if d == 'R':
-                current = (current[0]+1, current[1])
-            elif d == 'L':
-                current = (current[0]-1, current[1])
-            elif d == 'U':
-                current = (current[0], current[1]-1)
+        if part_one:
+            step = int(step)
+            next_dir = data[i+1].split()[0]
+        else:
+            step = int("0x"+color[2:-2], 16)
+            d = directions[int(color[-2:-1])]
+            next_dir = directions[int(data[i+1].split()[2][-2:-1])]
+        if d == 'R':
+            if next_dir == 'D':
+                if offset == (0, 0): offset = (1, 0)
+                elif offset == (1, 1): offset = (0, 1)
+                elif offset == (0, 1): offset = offset
+                elif offset == (1, 0): offset = offset
             else:
-                current = (current[0], current[1]+1)
-            grid.add(current)
-            if current[0] < bounds[0]:
-                bounds[0] = current[0]
-            if current[0] > bounds[1]:
-                bounds[1] = current[0]
-            if current[1] < bounds[2]:
-                bounds[2] = current[1]
-            if current[1] > bounds[3]:
-                bounds[3] = current[1]
-    dig(grid, bounds)
-    
-    return len(grid)
+                if offset == (0, 0): offset = offset
+                elif offset == (1, 1): offset = offset
+                elif offset == (0, 1): offset = (1, 1)
+                elif offset == (1, 0): offset = (0, 0)
+            new_point = (current[0]+offset[0]+step, current[1]+offset[1])
+            current = (current[0]+step, current[1])
+        elif d == 'L':
+            if next_dir == 'D':
+                if offset == (0, 0): offset = offset
+                elif offset == (1, 1): offset = offset
+                elif offset == (0, 1): offset = (1, 1)
+                elif offset == (1, 0): offset = (0, 0)
+            else:
+                if offset == (0, 0): offset = (1, 0)
+                elif offset == (1, 1): offset = (0, 1)
+                elif offset == (0, 1): offset = offset
+                elif offset == (1, 0): offset = offset
+            new_point = (current[0]+offset[0]-step, current[1]+offset[1])
+            current = (current[0]-step, current[1])
+        elif d == 'U':
+            if next_dir == 'R':
+                if offset == (0, 0): offset = offset
+                elif offset == (1, 1): offset = offset
+                elif offset == (0, 1): offset = (0, 0)
+                elif offset == (1, 0): offset = (1, 1)
+            else:
+                if offset == (0, 0): offset = (0, 1)
+                elif offset == (1, 1): offset = (1, 0)
+                elif offset == (0, 1): offset = offset
+                elif offset == (1, 0): offset = offset
+            new_point = (current[0]+offset[0], current[1]+offset[1]-step)
+            current = (current[0], current[1]-step)
+        else:
+            if next_dir == 'R':
+                if offset == (0, 0): offset = (0, 1)
+                elif offset == (1, 1): offset = (1, 0)
+                elif offset == (0, 1): offset = offset
+                elif offset == (1, 0): offset = offset
+            else:
+                if offset == (0, 0): offset = offset
+                elif offset == (1, 1): offset = offset
+                elif offset == (0, 1): offset = (0, 0)
+                elif offset == (1, 0): offset = (1, 1)
+            new_point = (current[0]+offset[0], current[1]+offset[1]+step)
+            current = (current[0], current[1]+step)
+        polygon.append(new_point)
+    return polygon
 
+def sol1(data):
+    areas = []
+    polygon = get_polygon(data, (0, 0), part_one=True)
+    areas.append(get_area(polygon))
+    polygon = get_polygon(data, (1, 1), part_one=True)
+    areas.append(get_area(polygon))
+    areas.append(get_area(polygon))
+    return max(areas)
 
-def flood_fill(grid, node):
-    if node in grid:
-        return
-    grid.add(node)
-    x, y = node
-    flood_fill((x-1, y))
-    flood_fill((x+1, y))
-    flood_fill((x, y-1))
-    flood_fill((x, y+1))
+def get_area(polygon):
+    polygon += [polygon[0], ]
+    total = 0
+    for i in range(len(polygon)-1):
+        x1, y1 = polygon[i]
+        x2, y2 = polygon[i+1]
+        total += (x1*y2-x2*y1)
+    return total // 2
 
-
-def dig2(grid, bounds):
-    for x in range(bounds[0], bounds[1]+1):
-        if (x, 0) not in grid and is_inside(grid, x, 0, bounds):
-            start_flood_fill = (x, 0)
-            break
-    flood_fill(grid, start_flood_fill)
 
 def sol2(data):
-    current = (0, 0)
-    grid = set([current])
-    bounds = [0, 0, 0, 0]
-    for line in data:
-        d, step, color = line.split()
-        step = int("0x"+color[2:-2], 16)
-        d = directions[int(color[-2:-1])]
-        if d == 'R':
-            if current[0]+step > bounds[1]:
-                bounds[1] = current[0]+step
-            grid.update([(current[0]+1+i, current[1]) for i in range(step)])
-        elif d == 'L':
-            if current[0]-step < bounds[0]:
-                bounds[0] = current[0]-step
-            grid.update([(current[0]-1-i, current[1]) for i in range(step)])
-        elif d == 'U':
-            if current[1]-step < bounds[2]:
-                bounds[2] = current[1]-step
-            grid.update([(current[0], current[1]-1-i) for i in range(step)])
-        else:
-            if current[1]+step > bounds[3]:
-                bounds[2] = current[1]+step
-            grid.update([(current[0], current[1]+1+i) for i in range(step)])
-    st.code("start")
-    dig2(grid, bounds)
-    
-    return len(grid)
+    areas = []
+    polygon = get_polygon(data, (0, 0), part_one=False)
+    areas.append(get_area(polygon))
+    polygon = get_polygon(data, (1, 1), part_one=False)
+    areas.append(get_area(polygon))
+    areas.append(get_area(polygon))
+    return max(areas)
 
 
 if not st.session_state.file_exists:
