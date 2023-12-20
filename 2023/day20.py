@@ -1,8 +1,14 @@
 from rich import print
 import streamlit as st
 import os
+import sys
+sys.setrecursionlimit(2000)
 
 from utils import *
+import math
+
+def lcm(a,b):
+    return (a*b) // math.gcd(a, b)
 
 # Define which function to apply to parse the input data, from the text file or the text areas
 # file_to_lines, file_to_ints, line_to_ints, line_to_str
@@ -43,10 +49,11 @@ def handle_signal(modules, f, c, module, signal, source):
     return 0
 
 
-def propagate(modules, flip_flops, conjunctions):
+def propagate(modules, flip_flops, conjunctions, observed=()):
     lows, highs = 0, 0
-    found = False
     to_process = [("broadcaster", 0, "button")]
+    found = []
+    observed_values = []
     while to_process:
         new_process = []
         for elem in to_process:
@@ -56,11 +63,17 @@ def propagate(modules, flip_flops, conjunctions):
                 highs += 1
             else:
                 lows += 1
+            if source in observed:
+                observed_values.append(modules[module]["state"])
+                if source in observed and pulse != 0:
+                    found.append(source)
+                    #st.code((source, pulse))
             signal = handle_signal(modules, flip_flops, conjunctions, module, pulse, source)
+            if module == 'ns':
+                pass
+                #st.code((modules[module]["state"], "ns sending", signal))
             if signal != 0:
                 for target in modules[module]["targets"]:
-                    if signal == -1 and target == 'rx':
-                        found = True
                     new_process.append((target, 0 if signal == -1 else 1, module))
         to_process = new_process
     return lows, highs, found
@@ -104,6 +117,7 @@ def sol1(data):
     return lows*highs
 
 
+
 def sol2(data):
     modules = {}
     flip_flops = set([])
@@ -131,37 +145,29 @@ def sol2(data):
                     connects[e] = [name[1:], ]
         else:
             modules[name] = {"targets": target.split(", ")}
+            for e in target.split(", "):
+                if e in connects:
+                    connects[e].append(name)
+                else:
+                    connects[e] = [name, ]
     for c in conjunctions:
         for in_ in connects[c]:
             modules[c]["state"][in_] = 0
-    chain = {}
-    current = "rx"
-    count = 0
-    while current is not None and count < 100:
-        st.code((f"parents of {current}", connects[current]))
-        for parent in connects[current]:
-            chain[parent] = modules[parent].get("state", {})
-            if parent == 'broadcast':
-                break
-        new_current = None
-        for parent in connects[current]:
-            if parent not in chain:
-                new_current = parrent
-        #current = connects[current][0]
-        count += 1
-        current = new_current
 
-        #break
-    button_presses = 0
-    while True:
-        l, h, found = propagate(modules, flip_flops, conjunctions)
-        button_presses += 1
-        break
-        #if button_presses % 100000 == 0:
-        #    st.code(button_presses)
+    values = []
+    parents = tuple(connects[connects["rx"][0]])
+    for b in range(10000):
+        l, h, found = propagate(modules, flip_flops, conjunctions, tuple(connects[connects["rx"][0]]))
         if found:
-            break
-    return button_presses
+            parents = tuple([p for p in parents if p not in found])
+            st.code(found)
+            values.append(b+1)
+            if not parents:
+                break
+    lcm = 1
+    for v in values:
+        lcm = lcm*v//math.gcd(lcm, v)
+    return lcm
 
 
 if not st.session_state.file_exists:
