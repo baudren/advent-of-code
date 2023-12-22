@@ -1,9 +1,23 @@
-from rich import print
+#from rich import print
 import streamlit as st
 import os
 import functools
 
 from utils import *
+import collections
+
+class Queue:
+    def __init__(self):
+        self.elements = collections.deque()
+    
+    def empty(self) -> bool:
+        return not self.elements
+    
+    def put(self, x):
+        self.elements.append(x)
+    
+    def get(self):
+        return self.elements.popleft()
 
 # Define which function to apply to parse the input data, from the text file or the text areas
 # file_to_lines, file_to_ints, line_to_ints, line_to_str
@@ -31,6 +45,7 @@ def get_neighbors(pos, walls, bounds):
         neighbors.append((x, y+1))
     return tuple(neighbors)
 
+
 @functools.cache
 def get_neighbors_2(pos, walls, bounds):
     neighbors = []
@@ -39,119 +54,112 @@ def get_neighbors_2(pos, walls, bounds):
         if (x-1, y) not in walls:
             neighbors.append((x-1, y))
     else:
-        if (bounds[0]-1, y) not in walls:
-            neighbors.append((x-1, y))
+        neighbors.append((x-1, y))
     if x < bounds[0]-2:
         if (x+1, y) not in walls:
             neighbors.append((x+1, y))
     else:
-        if (0, y) not in walls:
-            neighbors.append((x+1, y))
+        neighbors.append((x+1, y))
     if y > 0:
         if (x, y-1) not in walls:
             neighbors.append((x, y-1))
     else:
-        if (x, bounds[1]-1) not in walls:
-            neighbors.append((x, y-1))
+        neighbors.append((x, y-1))
     if y < bounds[0] -2:
         if (x, y+1) not in walls:
             neighbors.append((x, y+1))
     else:
-        if (x, 0) not in walls:
-            neighbors.append((x, y+1))
+        neighbors.append((x, y+1))
     return tuple(neighbors)
 
 def sol1(data):
-    positions = set([])
     walls = set([])
     for y, line in enumerate(data):
         for x, char in enumerate(line):
             if char == '#':
                 walls.add((x, y))
             elif char == 'S':
-                positions.add((x, y))
+                start = (x, y)
     walls = frozenset(walls)
     bounds = (len(data[0]), len(data))
-    for step in range(64):
-        new_positions = set()
-        for pos in positions:
-            #st.code(pos)
-            for n in get_neighbors(pos, walls, bounds):
-                new_positions.add(n)
-        positions = new_positions
 
+    frontier = Queue()
+    frontier.put(start)
+    reached_odd = set([])
+    reached_even = set([])
+    reached_even.add(start)
+    
+    for step in range(1, 64+1):
+        new_frontier = Queue()
+        while not frontier.empty():
+            current = frontier.get()
+            for next in get_neighbors_2(current, walls, bounds):
+                if step % 2 == 0:
+                    if next not in reached_even:
+                        new_frontier.put(next)
+                        reached_even.add(next)
+                else:
+                    if next not in reached_odd:
+                        new_frontier.put(next)
+                        reached_odd.add(next)
+        frontier = new_frontier
     total = 0
-    return len(positions)
+    if step % 2 == 0:
+        total += len(reached_even)
+    else:
+        total += len(reached_odd)
+    return total
 
 
 def sol2(data):
-    positions = set([])
     walls = set([])
     for y, line in enumerate(data):
         for x, char in enumerate(line):
             if char == '#':
                 walls.add((x, y))
             elif char == 'S':
-                positions.add((x, y))
+                start = (x, y)
     walls = frozenset(walls)
     bounds = (len(data[0]), len(data))
 
-    original = frozenset(positions)
-    
-    # then this loop seeds the neighbor quadrants in a defined way
-    # List of active quadrants, starting with the first one, coordinates 0, 0
-    active = set([(0, 0), ])
-    inactive = {}
-    positions = original.copy()
-    known = {(0, 0): original}
-    st.code((active, inactive, positions, known))
-    for step in range(100):
-        debug = False
-        new_positions = set()
-        for pos in positions:
-            x, y = pos
-            # map to first quadrant
-            for n in get_neighbors_2((x % bounds[0], y % bounds[1]), walls, bounds):
-                xx, yy = n
-                xxx, yyy = x//bounds[0]*bounds[0]+xx, y//bounds[1]*bounds[1]+yy
-                new_pos = xxx, yyy
-                quadrant = (xxx//bounds[0], yyy//bounds[1])
-                if debug: st.code((new_pos, quadrant))
-                if quadrant[0] != 0:
-                    if debug: st.code((new_pos, quadrant))
-                #if debug: print(("neighbors", n))
-                #if debug: print((x//bounds[0]*bounds[0]+xx, y//bounds[1]*bounds[1]+yy))
-                new_positions.add((x//bounds[0]*bounds[0]+xx, y//bounds[1]*bounds[1]+yy))
-        positions = new_positions
+    frontier = Queue()
+    frontier.put(start)
+    reached_odd = set([])
+    reached_even = set([])
+    reached_even.add(start)
+    #return 0
+    size = 65+131*2
+    values = []
+    for step in range(1, size+1):
+        new_frontier = Queue()
+        while not frontier.empty():
+            current = frontier.get()
+            x, y = current
+            for next in get_neighbors_2((x % bounds[0], y % bounds[1]), walls, bounds):
+                xx, yy = next
+                new_pos = x//bounds[0]*bounds[0]+xx, y//bounds[1]*bounds[1]+yy
+                if step % 2 == 0:
+                    if new_pos not in reached_even:
+                        new_frontier.put(new_pos)
+                        reached_even.add(new_pos)
+                else:
+                    if new_pos not in reached_odd:
+                        new_frontier.put(new_pos)
+                        reached_odd.add(new_pos)
+        frontier = new_frontier
+        if step % 2 == 0:
+            values.append(len(reached_even))
+        else:
+            values.append(len(reached_odd))
 
-    total = 0
-    return len(positions)
+    start = 65-1 # because my steps start at one....
 
-# Find loop for one quadrant
-    # known = set([frozenset(positions), ])
-    # lengths = [len(positions), ]
-    # for step in range(1000):
-    #     debug = step % 100 == 0
-    #     new_positions = set()
-    #     for pos in positions:
-    #         x, y = pos
-    #         # map to first quadrant
-    #         for n in get_neighbors((x % bounds[0], y % bounds[1]), walls, bounds):
-    #             xx, yy = n
-    #             #if debug: print(("neighbors", n))
-    #             #if debug: print((x//bounds[0]*bounds[0]+xx, y//bounds[1]*bounds[1]+yy))
-    #             new_positions.add((x//bounds[0]*bounds[0]+xx, y//bounds[1]*bounds[1]+yy))
-    #     if debug: st.code((step, len(new_positions)))
-    #     #if debug: print(new_positions)
-    #     positions = new_positions
-    #     if positions in known:
-    #         st.code("found a loop for step "+str(step))
-    #         st.code((len(positions), lengths[-1]))
-    #         break
-    #     else:
-    #         known.add(frozenset(positions))
-    #         lengths.append(len(positions))
-    
+    xs = [start+x*131 for x in range(3)]
+    first_diff = values[xs[1]]-values[xs[0]]
+    add = values[xs[2]]-values[xs[1]] - first_diff
+    i = (26501365-start)//131
+    return values[start]+i*first_diff+((i-1)*i//2)*add
+
 
 if not st.session_state.file_exists:
     data = st.text_area("input text from site")
