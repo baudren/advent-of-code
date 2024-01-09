@@ -1,3 +1,4 @@
+from copy import deepcopy
 from rich import print
 import streamlit as st
 import os
@@ -19,31 +20,20 @@ with st.sidebar:
 
 Location = namedtuple('Location', 'x y z')
 
-class Queue:
-    def __init__(self):
-        self.elements = collections.deque()
-    
-    def empty(self) -> bool:
-        return not self.elements
-    
-    def put(self, x):
-        self.elements.append(x)
-    
-    def get(self):
-        return self.elements.popleft()
 
 class PriorityQueue:
     def __init__(self):
         self.elements = []
-    
+
     def empty(self) -> bool:
         return not self.elements
-    
+
     def put(self, item, priority):
         heapq.heappush(self.elements, (priority, item))
-    
+
     def get(self):
         return heapq.heappop(self.elements)[1]
+
 class Brick:
     def __init__(self, start, end, label):
         self.s = start
@@ -132,7 +122,7 @@ def sol1(data):
         lowest_z[start.z].append(brick)
         label_i += 1
         #st.code((start, end))
-    
+
     # falling
     blocks, is_blocked = {}, {}
     for z in range(max(list(lowest_z.keys()))+1):
@@ -154,34 +144,7 @@ def sol1(data):
                 total += 1
     return total
 
-import functools
-from frozendict import frozendict
 
-#@functools.cache
-def count_falling(brick, bricks_d, blocks, is_blocked):
-    total = 0
-    removed = set()
-    frontier = PriorityQueue()
-    visited = set()
-    #st.code(bricks_d)
-    frontier.put(id(brick), brick.e.z)
-    while not frontier.empty():
-        f = bricks_d[frontier.get()]
-        #st.code(("frontier", f))
-        for block in blocks.get(f, []):
-            #st.code(("block", block))
-            if len([e for e in is_blocked[block] if e not in removed]) <= 1:
-                removed.add(block)
-                if block not in visited:
-                    total += 1
-                    frontier.put(id(block), block.e.z)
-                visited.add(block)
-    #st.code(total)
-    return total
-
-from copy import deepcopy
-
-# answer < 109903
 def sol2(data):
     bricks = []
     bricks_d = {}
@@ -226,7 +189,6 @@ def sol2(data):
                     total += 1
                 while moved:
                     moved = move(b, new_bricks, blocks, is_blocked)
-        #total += count_falling(brick, bricks_d, blocks, is_blocked)
     return total
 
 
