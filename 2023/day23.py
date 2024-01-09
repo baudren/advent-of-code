@@ -29,11 +29,6 @@ class Queue:
     def get(self):
         return self.elements.popleft()
 
-class Graph:
-    def __init__(self):
-        self.elements = set([])
-        self.linked = {}
-        self.rev_linked = {}
 
 def get_neighbors_down(point, points):
     n = []
@@ -159,7 +154,6 @@ def sol1(data):
     while not frontier.empty():
         current, d, visited = frontier.get()
         visited.append(current)
-        #st.code((current, visited))
         if current == end:
             paths.append(d)
         for neighbor, dd in graph.get(current, {}).items():
@@ -187,7 +181,6 @@ def sol2(data):
     visited = set([])
     splits = set([])
     go(start, start, 0, points, visited, graph, end, splits)
-    st.code("Found all splits")
     frontier = PriorityQueue()
     frontier.put((start, 0, frozenset()), 0)
     paths = []
@@ -196,11 +189,9 @@ def sol2(data):
         current, d, visited = frontier.get()
         v = set(visited)
         v.add(current)
-        #st.code((current, visited))
         if current == end:
             if d > current_max:
                 current_max = d
-                st.code(current_max)
         else:
             for neighbor, dd in graph.get(current, {}).items():
                 if neighbor not in v:
